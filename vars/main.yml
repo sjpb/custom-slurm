@@ -1,0 +1,20 @@
+slurm_version: '23.02.2'
+slurm_support_repos:
+  - name: epel-release
+  - name: http://repos.openhpc.community/OpenHPC/2/EL_8/x86_64/ohpc-release-2-1.el8.x86_64.rpm
+    disable_gpg_check: True
+slurm_required_pkgs:
+  - rpmdevtools
+  - gcc
+  - python3
+  - readline-devel
+  # - hwloc-ohpc
+  - munge-libs
+  # - munge
+  - perl
+  - hwloc-devel
+  - munge-devel
+  - pam-devel
+  - lua-devel # provides pkgconfig(lua)
+  - mysql-devel
+  - pmix-ohpc

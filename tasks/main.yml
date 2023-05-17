@@ -1,0 +1,54 @@
+# based on https://gist.github.com/sjpb/8f1d12a7938ac702608dc4093081bf2b
+- name: Enable PowerTools
+  command: dnf config-manager --set-enabled powertools
+  become: yes
+  # TODO: make idempotent
+
+- name: Install repos for tools & dependencies
+  dnf: "{{ item }}"
+  become: yes
+  loop: "{{ slurm_support_repos }}"
+
+- name: Install packages for tools & dependencies
+  dnf:
+    name: "{{ slurm_required_pkgs }}"
+  become: yes
+
+- name: Create rpm build tree
+  command:
+    cmd: rpmdev-setuptree
+    creates: ~/rpmbuild
+
+- name: Download Slurm source
+  get_url:
+    url: https://download.schedmd.com/slurm/slurm-{{ slurm_version }}.tar.bz2
+    dest: ~/rpmbuild/SOURCES
+
+- name: Extract spec file
+  shell:
+    cmd: >-
+      tar -C ~/rpmbuild/SPECS 
+      --strip-components=1 
+      -xvjf 
+      ~/rpmbuild/SOURCES/slurm-{{ slurm_version }}.tar.bz2 
+      slurm-{{ slurm_version }}/slurm.spec
+    creates: ~/rpmbuild/SPECS/slurm.spec
+
+- name: Modify rpmmacros file
+  copy:
+    content: |
+      %_topdir %(echo $HOME)/rpmbuild
+
+      %__arch_install_post \
+          /usr/lib/rpm/check-buildroot
+    dest: ~/.rpmmacros
+
+- name: Build slurm
+  command:
+    cmd: >-
+      rpmbuild -ba 
+      -D '_with_lua --with-lua=/usr' 
+      -D '_with_pmix --with-pmix=/opt/ohpc/admin/pmix' 
+      -D '_with_mysql 1' 
+      -D '_with_hwloc 1' 
+      rpmbuild/SPECS/slurm.spec

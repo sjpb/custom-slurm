@@ -1,0 +1,22 @@
+- hosts: localhost
+  become: no
+  gather_facts: no
+  tasks:
+    - name: Read terraform outputs
+      command: terraform output -json
+      register: _tf_output
+    - name: Add builder to inventory
+      add_host:
+        name: builder_host
+        groups: builder
+        ansible_host: "{{ (_tf_output.stdout | from_json).ip.value }}"
+
+- hosts: builder
+  become: no
+  gather_facts: no
+  vars:
+    slurm_version: 23.02.2
+    _slurm_tmp_root: "/tmp/slurm-{{ slurm_version }}"
+  tasks:
+    - import_role:
+        name: custom-slurm
